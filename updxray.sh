@@ -6,17 +6,8 @@ updateXray() {
     # 获取最新的5个版本
     releases=$(curl -s "https://api.github.com/repos/XTLS/Xray-core/releases?per_page=5")
 
-    # 尝试获取最新的非预览版本
-    stable_version=$(echo "$releases" | jq -r '.[] | select(.prerelease==false) | .tag_name' | head -1)
-
-    # 如果没有找到稳定版本，就选择最新的预览版本
-    if [ -z "$stable_version" ]; then
-        version=$(echo "$releases" | jq -r '.[0].tag_name')
-        echo "未找到稳定版本，选择最新的预览版本: ${version}"
-    else
-        version=$stable_version
-        echo "找到最新的稳定版本: ${version}"
-    fi
+    # 获取时间上最新的版本（不考虑是否为预览版）
+    version=$(echo "$releases" | jq -r '.[0].tag_name')
 
     echo "选定的 Xray-core 版本: ${version}"
 
