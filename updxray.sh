@@ -12,7 +12,7 @@ updateXray() {
     fi
 
     # 获取时间上最新的版本（不考虑是否为预览版）
-    latest_version=$(echo "$releases" | jq -r '.[0].tag_name')
+    latest_version=$(echo "$releases" | jq -r '.[0].tag_name' | sed 's/^v//')  # 移除 'v' 前缀
     if [[ -z "$latest_version" ]]; then
         echo "未找到有效的版本号，请检查 GitHub API 返回的数据格式。"
         exit 1
@@ -21,7 +21,7 @@ updateXray() {
 
     # 检查本地 Xray-core 版本
     if [[ -f "/etc/v2ray-agent/xray/xray" ]]; then
-        local_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}')
+        local_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}' | sed 's/^v//')  # 移除 'v' 前缀
         echo "当前本地 Xray-core 版本: ${local_version}"
 
         if [[ "$local_version" == "$latest_version" ]]; then
@@ -50,7 +50,7 @@ updateXray() {
 
     # 下载新版本
     echo "下载 Xray-core 版本 ${latest_version}..."
-    wget -c -q --show-progress -P /etc/v2ray-agent/xray/ "https://github.com/XTLS/Xray-core/releases/download/${latest_version}/${xrayCoreCPUVendor}.zip"
+    wget -c -q --show-progress -P /etc/v2ray-agent/xray/ "https://github.com/XTLS/Xray-core/releases/download/v${latest_version}/${xrayCoreCPUVendor}.zip"
     
     if [[ ! -f "/etc/v2ray-agent/xray/${xrayCoreCPUVendor}.zip" ]]; then
         echo "核心下载失败，请检查网络连接后重试。"
@@ -77,7 +77,7 @@ updateXray() {
     updateGeoData
 
     # 检查更新是否成功
-    installed_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}')
+    installed_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}' | sed 's/^v//')  # 移除 'v' 前缀
     if [[ "$installed_version" == "$latest_version" ]]; then
         echo "Xray 已成功更新到版本 ${installed_version}"
     else
