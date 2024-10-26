@@ -3,7 +3,7 @@
 updateXray() {
     echo "=== 开始自动更新 Xray ==="
 
-    # 获取最新的5个版本
+    # 获取 Xray-core 最新版本信息
     echo "获取 Xray-core 最新版本信息..."
     releases=$(curl -s "https://api.github.com/repos/XTLS/Xray-core/releases?per_page=5")
     if [[ -z "$releases" ]]; then
@@ -12,13 +12,25 @@ updateXray() {
     fi
 
     # 获取时间上最新的版本（不考虑是否为预览版）
-    version=$(echo "$releases" | jq -r '.[0].tag_name')
-    if [[ -z "$version" ]]; then
+    latest_version=$(echo "$releases" | jq -r '.[0].tag_name')
+    if [[ -z "$latest_version" ]]; then
         echo "未找到有效的版本号，请检查 GitHub API 返回的数据格式。"
         exit 1
     fi
+    echo "云端最新 Xray-core 版本: ${latest_version}"
 
-    echo "选定的 Xray-core 版本: ${version}"
+    # 检查本地 Xray-core 版本
+    if [[ -f "/etc/v2ray-agent/xray/xray" ]]; then
+        local_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}')
+        echo "当前本地 Xray-core 版本: ${local_version}"
+
+        if [[ "$local_version" == "$latest_version" ]]; then
+            echo "Xray-core 已是最新版本，无需更新。"
+            return
+        fi
+    else
+        echo "本地未安装 Xray-core，进行初次安装..."
+    fi
 
     # 确定 CPU 类型
     echo "检测系统 CPU 架构..."
@@ -37,8 +49,8 @@ updateXray() {
     echo "检测到的 CPU 架构：${xrayCoreCPUVendor}"
 
     # 下载新版本
-    echo "下载 Xray-core 版本 ${version}..."
-    wget -c -q --show-progress -P /etc/v2ray-agent/xray/ "https://github.com/XTLS/Xray-core/releases/download/${version}/${xrayCoreCPUVendor}.zip"
+    echo "下载 Xray-core 版本 ${latest_version}..."
+    wget -c -q --show-progress -P /etc/v2ray-agent/xray/ "https://github.com/XTLS/Xray-core/releases/download/${latest_version}/${xrayCoreCPUVendor}.zip"
     
     if [[ ! -f "/etc/v2ray-agent/xray/${xrayCoreCPUVendor}.zip" ]]; then
         echo "核心下载失败，请检查网络连接后重试。"
@@ -66,10 +78,10 @@ updateXray() {
 
     # 检查更新是否成功
     installed_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}')
-    if [[ "$installed_version" == "$version" ]]; then
+    if [[ "$installed_version" == "$latest_version" ]]; then
         echo "Xray 已成功更新到版本 ${installed_version}"
     else
-        echo "Xray 更新失败，当前版本为 ${installed_version}，目标版本为 ${version}"
+        echo "Xray 更新失败，当前版本为 ${installed_version}，目标版本为 ${latest_version}"
         exit 1
     fi
 
