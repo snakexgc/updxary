@@ -57,11 +57,21 @@ updateXray() {
     rm -rf "/etc/v2ray-agent/xray/${xrayCoreCPUVendor}.zip"
     echo "解压完成并清理压缩文件。"
 
+    # 设置执行权限
+    chmod +x /etc/v2ray-agent/xray/xray
+    echo "已赋予 Xray 执行权限。"
+
     # 更新 geoip 和 geosite
     updateGeoData
 
-    chmod 655 /etc/v2ray-agent/xray/xray
-    echo "Xray 已成功更新到版本 ${version}"
+    # 检查更新是否成功
+    installed_version=$(/etc/v2ray-agent/xray/xray -version | head -n 1 | awk '{print $2}')
+    if [[ "$installed_version" == "$version" ]]; then
+        echo "Xray 已成功更新到版本 ${installed_version}"
+    else
+        echo "Xray 更新失败，当前版本为 ${installed_version}，目标版本为 ${version}"
+        exit 1
+    fi
 
     # 重启 Xray 服务
     echo "重启 Xray 服务..."
